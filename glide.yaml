@@ -1,0 +1,3 @@
+package: github.com/petergtz/concourse-committers
+import:
+- package: github.com/concourse/atc

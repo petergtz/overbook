@@ -1,0 +1,15 @@
+jobs:
+- name: job
+  plan:
+    - aggregate:
+        - get: one
+        - get: two
+        - task: pre
+    - task: Hello
+    - task: Hello again
+    - get: three
+    - task: and again
+    - get: four
+    - aggregate:
+        - get: five
+        - task: post
