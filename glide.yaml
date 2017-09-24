@@ -1,3 +1,4 @@
 package: github.com/petergtz/concourse-committers
 import:
 - package: github.com/concourse/atc
+- package: gopkg.in/alecthomas/kingpin.v2
