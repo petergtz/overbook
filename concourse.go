@@ -54,7 +54,7 @@ func traversAggregate(aggregate *atc.PlanSequence, context *Payload) {
 			context.repos = append(context.repos, plan.Get)
 		}
 		if plan.Task != "" {
-			if len(reposSoFar) != 0 {
+			if len(reposSoFar) != len(context.previousRepos) && len(reposSoFar) != 0 {
 				*aggregate = append((*aggregate)[:i], append([]atc.PlanConfig{task(context, reposSoFar)}, (*aggregate)[i:]...)...)
 				i++
 			}

@@ -34,7 +34,7 @@ func main() {
 		}
 		output := strings.Replace(string(bytes), "$INPUTS", inputs, -1)
 
-		ioutil.WriteFile(strings.Replace(*taskConfigPath, templateExt, "", -1)+strconv.Itoa(i)+".yml", []byte(output), 0644)
+		ioutil.WriteFile(strings.Replace(*taskConfigPath, templateExt, "", -1)+strconv.Itoa(i+1)+".yml", []byte(output), 0644)
 	}
 
 }
