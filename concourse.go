@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/concourse/atc"
 	"gopkg.in/yaml.v2"
@@ -13,10 +14,10 @@ type Payload struct {
 	repos                  []string
 	previousRepos          []string
 	taskFilepathWithoutExt string
-	ciResourceName         string
+	additionalResources    []string
 }
 
-func Overbook(pipelineYaml []byte, taskFilepathWithoutExt string, ciResourceName string) string {
+func Overbook(pipelineYaml []byte, taskFilepathWithoutExt string, additionalResources []string) string {
 	var config atc.Config
 	e := yaml.Unmarshal(quoteConcourse(pipelineYaml), &config)
 	if e != nil {
@@ -26,7 +27,7 @@ func Overbook(pipelineYaml []byte, taskFilepathWithoutExt string, ciResourceName
 	for u := range config.Jobs {
 		context := Payload{
 			taskFilepathWithoutExt: taskFilepathWithoutExt,
-			ciResourceName:         ciResourceName,
+			additionalResources:    additionalResources,
 		}
 		traverseDo(&config.Jobs[u].Plan, &context)
 	}
@@ -90,16 +91,19 @@ func task(context *Payload, repos []string) atc.PlanConfig {
 	return atc.PlanConfig{
 		Task:           fmt.Sprintf("Collect inputs from %v", repos),
 		TaskConfigPath: fmt.Sprintf("%v%v.yml", context.taskFilepathWithoutExt, len(repos)),
-		InputMapping:   inputMapping(repos, context.ciResourceName),
+		InputMapping:   inputMapping(repos, context.additionalResources),
 	}
 }
 
-func inputMapping(resources []string, ciResource string) map[string]string {
+func inputMapping(resources []string, additionalResources []string) map[string]string {
 	result := make(map[string]string)
 	for i, resource := range resources {
 		result["input"+strconv.Itoa(i)] = resource
 	}
-	result["ci"] = ciResource
+	for _, resource := range additionalResources {
+		keyValue := strings.SplitN(resource, "=", 2)
+		result[keyValue[0]] = keyValue[1]
+	}
 	return result
 }
 

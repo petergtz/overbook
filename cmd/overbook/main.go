@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
@@ -10,9 +11,9 @@ import (
 )
 
 var (
-	pipelineConfigPath = kingpin.Flag("config", "pipeline config yaml path").Required().Short('c').String()
-	taskConfigPath     = kingpin.Flag("task-path", "path to task configuration without yml extension").Required().Short('t').String()
-	ciResourceName     = kingpin.Flag("ci-resource-name", "the name of the resource containing task scripts").Required().Short('r').String()
+	pipelineConfigPath  = kingpin.Flag("config", "pipeline config yaml path").Required().Short('c').String()
+	taskConfigPath      = kingpin.Flag("task-path", "path to task configuration without yml extension").Required().Short('t').String()
+	additionalResources = kingpin.Flag("resource", "the name of an additional resource").Required().Short('r').Strings()
 )
 
 func main() {
@@ -22,7 +23,12 @@ func main() {
 	if e != nil {
 		panic(e)
 	}
-	output := concourse.Overbook(bytes, *taskConfigPath, *ciResourceName)
+	for _, resource := range *additionalResources {
+		if !strings.Contains(resource, "=") {
+			kingpin.FatalUsage("resource format for %v not valid", resource)
+		}
+	}
+	output := concourse.Overbook(bytes, *taskConfigPath, *additionalResources)
 
 	fmt.Printf(output)
 }
