@@ -22,22 +22,66 @@ The following instructions assume that you have [Go](https://golang.org/dl/) and
 
 ## Getting Started
 
-### Example Use Case
-Let's say every time a Concourse build fails, you want to notify **exactly** the person responsible for the failure, so that unnecessary communication between members of the team can be avoided, and a fix can be pushed as quickly as possible.
+### Problem Statement
+Sometimes it's necessary to run a task in every job of a pipeline, and it takes all resources as input that have been consumed by `get` resources.
 
-One way to do that is to use the [Slack resource](https://github.com/cloudfoundry-community/slack-notification-resource) using _name tags_ so that the person gets notified directly.
+While it is possible to add this manually to the pipeline yml, it's a tedious task, involving a lot of copy and paste (with slight changes, because every job might consume a different set of `get` resources), and it litters the pipeline yml with a lot of noise. Furthermore, Concourse task ymls have a fixed set of inputs, which means that for every number of inputs we would need to write its own task yml.
 
-Since most of the time changes in pipelines are introduced by git commits, it makes sense to concentrate on committers when it comes to "blaming" the right person.
+Overbook solves this problem by automating it.
 
-To trigger the Slack resource on a failure one usually puts it into an `on_failure` block in the job and use [metadata](http://concourse.ci/implementing-resources.html#resource-metadata) similarly to what's [explained](https://github.com/cloudfoundry-community/slack-notification-resource#metadata) in the Slack resource itself.
+### What Overbook Does
+When Overbook runs, it inserts Concourse tasks into jobs. It does this precisely before *every existing task*, with the exception defined below. The inserted task takes all resources consumed so far by the job as input.
 
-However, with that approach it's very difficult to tag one or more specific persons in Slack and this is were Overbook can help.
+The exception to the mechanism explained below, is that Overbook will not insert a task when the set of resources hasn't changed since the last inserted task.
 
-Overbook can augment your pipeline with additional tasks that make all potential breakage candidates available in a file and hence makes them available to an `on_failure` Slack resource.
+## Example Use Cases
 
-### Implementing the Example
+It's not obvious how Overbook can help to solve real-world problems. Before going into such a real-world problem in [How to Slack a Committer of a Faulty Commit](#how_to_slack_a_committer_of_a_faulty_commit), let's look into a simpler use case to get a feel for how Overbook works.
 
-#### Creating the Committer Aggregation Task
+### Hello World
+
+*TBD*
+
+### How to Slack a Committer of a Faulty Commit
+
+#### Problem
+
+Often, in Concourse pipelines, you can see an `on_failure` block in all jobs with the following content:
+
+```yaml
+  put: slack
+  params:
+    text: |
+      The Concourse pipeline broke. See:
+      $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+```
+
+This notifies the owners of the pipeline that something went wrong.
+
+The problem with this approach is that it doesn't address the actual person who has caused the breakage.
+
+Instead, let's say every time a Concourse build fails, we'd like to notify **exactly** the person responsible for the failure, so that unnecessary communication between members of the team can be avoided, and a fix can be pushed as quickly as possible.
+
+One way to do that is to use Slack's _name tags_ so that the person gets notified directly.
+
+So, roughly what we want to do instead, is:
+
+```yaml
+  put: slack
+  params:
+    text: |
+      $TEXT_FILE_CONTENT The Concourse pipeline broke. See:
+      $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+    text_file: points-of-contact/slack-users-single-line
+```
+
+Where `points-of-contact/slack-users-single-line` contains the Slack users who have potentially caused the broken build. But where does this `points-of-contact/slack-users-single-line` come from?
+
+This is where Overbook comes into play.
+
+#### Implementing the Use Case
+
+##### Creating the Committer Aggregation Task
 Create a file `aggregate-committers-for-notification.yml.overbook-template` (name can be choosen freely, extension is important) with the following content:
 
 ```yaml
@@ -112,7 +156,7 @@ cat points-of-contact/slack-users-single-line
 
 Note that the line `for input in input*; do` now automatically takes all inputs made available through the task config.
 
-#### Using the Committer Aggregation Task
+##### Using the Committer Aggregation Task
 
 With the task from above at hand, we can now augment our pipeline, by running:
 
