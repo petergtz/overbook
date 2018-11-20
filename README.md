@@ -6,6 +6,10 @@ How do you add more activity to a [Concourse](https://concourse.ci)? By overbook
 
 Overbook is a utility to insert new tasks to an existing Concourse pipeline. The inputs made available to the new tasks are *all* in-resources consumed so far in a job. See "Getting Started" for more details.
 
+**Wait, what are you talking about?**
+
+Okay. In simple words, Overbook makes it feasible to systematically notify people on failed jobs in Concourse pipelines. Other approaches require you to copy this notification-on-failure setting all over the place in your pipelines.
+
 ## Install
 
 The following instructions assume that you have [Go](https://golang.org/dl/) and [Glide](https://github.com/Masterminds/glide#install) installed on your system and that you [set up a Go workspace properly](https://golang.org/doc/code.html#Workspaces).
